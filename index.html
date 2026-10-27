@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stick-Up Gauge — Kalkulator Pengeboran Nikel Laterit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="rig-frame">
+
+  <header class="panel-header">
+    <div class="header-left">
+      <div class="rivet"></div>
+      <div>
+        <p class="eyebrow">FIELD INSTRUMENT — MINE GEOLOGY</p>
+        <h1>STICK-UP GAUGE</h1>
+        <p class="subtitle">Simulasi stick up per interval pengeboran nikel laterit</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-lamp" id="statusLamp"></div>
+      <span id="statusText">MENUNGGU INPUT</span>
+    </div>
+  </header>
+
+  <main class="dashboard">
+
+    <!-- INPUT COLUMN -->
+    <section class="panel input-panel">
+      <h2 class="panel-title"><span class="tag">01</span> Kedalaman Target</h2>
+
+      <div class="depth-input-group">
+        <label for="targetDepth">Kedalaman rencana (TD)</label>
+        <div class="depth-field">
+          <input type="number" id="targetDepth" inputmode="decimal" placeholder="0.00" step="1" min="0">
+          <span class="unit">meter</span>
+        </div>
+      </div>
+
+      <div class="toggle-row">
+        <label class="switch">
+          <input type="checkbox" id="useSupport">
+          <span class="slider"></span>
+        </label>
+        <div>
+          <p class="toggle-label">Izinkan pipa opsional 1,5 m</p>
+          <p class="toggle-note">Mati = hanya pipa 3 m (wajib). Nyala = pakai pipa 1,5 m dulu, otomatis ditukar setara 1 pipa 3 m tiap 2 batang terpakai.</p>
+        </div>
+      </div>
+
+      <button id="calcBtn" class="calc-btn">
+        <span>HITUNG STICK UP</span>
+      </button>
+
+      <div class="advanced-toggle">
+        <button id="advToggle" type="button" class="link-btn">Pengaturan lanjutan ⌄</button>
+      </div>
+
+      <div class="advanced-panel" id="advancedPanel">
+        <div class="adv-row">
+          <label for="cbLength">Panjang Core Barrel</label>
+          <div class="adv-field">
+            <input type="number" id="cbLength" value="2.6" step="0.1" min="0.1">
+            <span class="unit-sm">m</span>
+          </div>
+        </div>
+        <div class="adv-row">
+          <label for="interval">Panjang interval / run</label>
+          <div class="adv-field">
+            <input type="number" id="interval" value="1" step="0.1" min="0.1">
+            <span class="unit-sm">m</span>
+          </div>
+        </div>
+        <div class="adv-row">
+          <label for="safeMin">Batas minimum aman</label>
+          <div class="adv-field">
+            <input type="number" id="safeMin" value="0.6" step="0.1" min="0">
+            <span class="unit-sm">m</span>
+          </div>
+        </div>
+        <div class="adv-row">
+          <label for="standardLen">Panjang pipa standar</label>
+          <div class="adv-field">
+            <input type="number" id="standardLen" value="3.0" step="0.1" min="0.1">
+            <span class="unit-sm">m</span>
+          </div>
+        </div>
+        <div class="adv-row">
+          <label for="supportLen">Panjang pipa opsional</label>
+          <div class="adv-field">
+            <input type="number" id="supportLen" value="1.5" step="0.1" min="0.1">
+            <span class="unit-sm">m</span>
+          </div>
+        </div>
+        <div class="adv-row">
+          <label for="maxSupport">Maks. pipa opsional aktif</label>
+          <div class="adv-field">
+            <input type="number" id="maxSupport" value="2" step="1" min="1">
+            <span class="unit-sm">bh</span>
+          </div>
+        </div>
+        <p class="adv-note">Batas maksimum stick up mengikuti panjang core barrel + 1 pipa (2,6 m pada pengaturan default) — tercapai tepat setelah setiap penambahan pipa.</p>
+      </div>
+
+      <div class="error-box" id="errorBox" hidden></div>
+    </section>
+
+    <!-- READOUT COLUMN -->
+    <section class="panel readout-panel">
+      <h2 class="panel-title"><span class="tag">02</span> Hasil Akhir</h2>
+
+      <div class="readout-grid">
+        <div class="readout-card highlight">
+          <p class="readout-label">Stick Up Akhir</p>
+          <p class="readout-value" id="outStickUp">—</p>
+          <p class="readout-unit">meter, pada interval ke-<span id="outLastMeter">—</span></p>
+        </div>
+        <div class="readout-card">
+          <p class="readout-label">Total Pipa (+ CB)</p>
+          <p class="readout-value" id="outPipeCount">—</p>
+          <p class="readout-unit">batang</p>
+        </div>
+      </div>
+
+      <div class="breakdown" id="breakdown">
+        <div class="breakdown-row">
+          <span class="dot dot-a"></span>
+          <span class="bd-label">Pipa standar (3 m)</span>
+          <span class="bd-value" id="outStandard">—</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="dot dot-b"></span>
+          <span class="bd-label">Pipa opsional aktif (belum ditukar)</span>
+          <span class="bd-value" id="outActiveSupport">—</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="dot dot-cb"></span>
+          <span class="bd-label">Core Barrel</span>
+          <span class="bd-value" id="outCB">—</span>
+        </div>
+        <div class="breakdown-row total-row">
+          <span class="bd-label">Pipa opsional terpakai (seumur simulasi)</span>
+          <span class="bd-value" id="outSupportUsedTotal">—</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROGRESS TABLE COLUMN -->
+    <section class="panel progress-panel">
+      <h2 class="panel-title"><span class="tag">03</span> Progres per Interval</h2>
+      <div class="table-wrap">
+        <table class="progress-table">
+          <thead>
+            <tr><th>Interval</th><th>Stick Up</th><th>Kejadian</th></tr>
+          </thead>
+          <tbody id="progressBody">
+            <tr><td colspan="3" class="empty-row">Isi kedalaman untuk melihat progres.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FORMULA SHEET -->
+  <section class="panel formula-panel">
+    <h2 class="panel-title"><span class="tag">REF</span> Rumus yang Digunakan</h2>
+    <div class="formula-grid">
+      <div class="formula-card">
+        <p class="formula-caption">Stick up dasar</p>
+        <p class="formula-eq">SU = Panjang&nbsp;Pipa&nbsp;Total + CB − Total&nbsp;Kedalaman</p>
+      </div>
+      <div class="formula-card">
+        <p class="formula-caption">Syarat wajib tambah pipa</p>
+        <p class="formula-eq">Jika (SU − interval) &lt; Batas&nbsp;Min → tambah pipa dulu</p>
+      </div>
+      <div class="formula-card">
+        <p class="formula-caption">Konversi pipa opsional</p>
+        <p class="formula-eq">2 × Pipa&nbsp;1,5&nbsp;m = 1 × Pipa&nbsp;3&nbsp;m (setara)</p>
+      </div>
+    </div>
+    <p class="formula-footnote">Simulasi berjalan per interval pengeboran (default 1 m). Setiap sebelum interval berikutnya dijalankan, sistem mengecek apakah stick up akan jatuh di bawah batas minimum aman (default 0,6 m) — jika ya, satu pipa ditambahkan lebih dulu. Pipa 3 m (standar) selalu tersedia; pipa 1,5 m (opsional, kalau diaktifkan) dipakai lebih dulu, dan begitu terpakai 2 batang aktif, keduanya dicatat setara 1 pipa 3 m di rekap jumlah pipa — lalu opsi pipa 1,5 m tersedia lagi untuk siklus berikutnya. Core Barrel selalu dihitung sebagai 1 komponen dalam total pipa yang digunakan.</p>
+  </section>
+
+  <footer class="panel-footer">
+    <span>STICK-UP GAUGE · ALAT BANTU SUPERVISI PENGEBORAN</span>
+    <span>Cek ulang stick up aktual di lapangan tiap akhir run</span>
+  </footer>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
